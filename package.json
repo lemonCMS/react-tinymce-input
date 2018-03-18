@@ -1,6 +1,6 @@
 {
   "name": "react-tinymce-input",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "A React component to control TinyMCE.",
   "main": "dist/TinyMCEInput.js",
   "scripts": {
@@ -28,6 +28,7 @@
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.2.1",
+    "babel-loader": "^7.1.4",
     "babel-preset-env": "^1.6.1",
     "babel-preset-stage-0": "^6.24.1",
     "eslint": "^4.19.0",
@@ -42,8 +43,5 @@
   },
   "peerDependencies": {
     "react": "^0.13 || ^0.14 || ^15.x || ^16.x"
-  },
-  "dependencies": {
-    "babel-loader": "^7.1.4"
   }
 }
