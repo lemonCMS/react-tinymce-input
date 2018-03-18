@@ -56,17 +56,17 @@ class TinyMCEInput extends React.Component {
     onSetupEditor: PropTypes.func,
 
     // direct pass through events
-    // onActivate: PropTypes.func,
-    // onClick: PropTypes.func,
-    // onDeactivate: PropTypes.func,
-    // onFocus: PropTypes.func,
-    // onHide: PropTypes.func,
-    // onInit: PropTypes.func,
-    // onRedo: PropTypes.func,
-    // onRemove: PropTypes.func,
-    // onReset: PropTypes.func,
-    // onShow: PropTypes.func,
-    // onSubmit: PropTypes.func,
+    onActivate: PropTypes.func,
+    onClick: PropTypes.func,
+    onDeactivate: PropTypes.func,
+    onFocus: PropTypes.func,
+    onHide: PropTypes.func,
+    onInit: PropTypes.func,
+    onRedo: PropTypes.func,
+    onRemove: PropTypes.func,
+    onReset: PropTypes.func,
+    onShow: PropTypes.func,
+    onSubmit: PropTypes.func,
     onUndo: PropTypes.func,
 
     textareaProps: PropTypes.object.isRequired,       // props passed through to the textarea
@@ -82,7 +82,8 @@ class TinyMCEInput extends React.Component {
     pollInterval: 1000,
     textareaProps: {},
     otherEventHandlers: {},
-    onChange: () => {},
+    onChange: () => {
+    },
     component: 'textarea',
   };
 
@@ -104,8 +105,7 @@ class TinyMCEInput extends React.Component {
     this.onTinyMCERedo = this.onTinyMCERedo.bind(this);
     this.onTinyMCEDrop = this.onTinyMCEDrop.bind(this);
     this.onTextareaChange = this.onTextareaChange.bind(this);
-    this.state = {
-    };
+    this.state = {};
     this.component = null;
     this.componentId = null;
   }
@@ -113,6 +113,7 @@ class TinyMCEInput extends React.Component {
   getComponentID() {
     return (this.componentId || (this.componentId = this.component.getAttribute('id')));
   }
+
   componentWillMount() {
     this.setState({value: this.props.value || ''});
   }
