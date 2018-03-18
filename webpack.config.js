@@ -1,18 +1,26 @@
 module.exports = {
-  entry: {
-    tiny: './examples/Tiny.js'
-  },
+  mode: 'development',
+  entry: [
+    './examples/Tiny.js'
+  ],
   output: {
-      filename: '[name].bundle.js',
-      publicPath: 'http://localhost:8090/assets',
-      sourceMapFilename: '[name].bundle.map'
+    path: __dirname + '/dist',
+    publicPath: '/assets',
+    filename: 'tiny.bundle.js'
+  },
+  devServer: {
+    contentBase: '.'
   },
   module: {
-    loaders: [
-      { test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader?optional[]=runtime'}
+    rules: [
+      {
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        use: ['babel-loader']
+      }
     ]
   },
   resolve: {
-    extensions: ['', '.js', '.jsx']
-  }
+    extensions: ['*', '.js', '.jsx']
+  },
 };

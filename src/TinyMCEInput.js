@@ -1,4 +1,4 @@
-/*global tinymce */
+/* global tinymce */
 
 // TinyMCE semi-controlled component.
 //
@@ -18,10 +18,8 @@
 //     If you are trying to write a control that need per-character eventing, ex. a component that allows
 //     multiple editors to work on the input at the same time, tinymce may not be right for you.
 
-var React = require('react')
-  , PropTypes = require('prop-types')
-  , createReactClass = require('create-react-class')
-  , uuid = require('uuid');
+import React from 'react';
+import PropTypes from 'prop-types';
 
 const DIRECT_PASSTHROUGH_EVENTS = [
   'Activate',
@@ -35,14 +33,14 @@ const DIRECT_PASSTHROUGH_EVENTS = [
   'Submit',
   'Click',
 ];
-const PSEUDO_HIDDEN = {position: 'absolute', left: -200, top: -200, height: 0 };
+const PSEUDO_HIDDEN = {position: 'absolute', left: -200, top: -200, height: 0};
 
-var TinyMCEInput = createReactClass({
-  displayName: 'TinyMCEInput',
-  propTypes: {
+class TinyMCEInput extends React.Component {
+  static propTypes = {
     className: PropTypes.string,
     tinymceConfig: PropTypes.object.isRequired,
     name: PropTypes.string,                           // the form name for the input element
+    component: PropTypes.string,
     value: PropTypes.string,
     rows: PropTypes.number,
     focus: PropTypes.bool,                            // focus the tinymce element if not already focused
@@ -58,17 +56,17 @@ var TinyMCEInput = createReactClass({
     onSetupEditor: PropTypes.func,
 
     // direct pass through events
-    onActivate: PropTypes.func,
-    onClick: PropTypes.func,
-    onDeactivate: PropTypes.func,
-    onFocus: PropTypes.func,
-    onHide: PropTypes.func,
-    onInit: PropTypes.func,
-    onRedo: PropTypes.func,
-    onRemove: PropTypes.func,
-    onReset: PropTypes.func,
-    onShow: PropTypes.func,
-    onSubmit: PropTypes.func,
+    // onActivate: PropTypes.func,
+    // onClick: PropTypes.func,
+    // onDeactivate: PropTypes.func,
+    // onFocus: PropTypes.func,
+    // onHide: PropTypes.func,
+    // onInit: PropTypes.func,
+    // onRedo: PropTypes.func,
+    // onRemove: PropTypes.func,
+    // onReset: PropTypes.func,
+    // onShow: PropTypes.func,
+    // onSubmit: PropTypes.func,
     onUndo: PropTypes.func,
 
     textareaProps: PropTypes.object.isRequired,       // props passed through to the textarea
@@ -76,177 +74,219 @@ var TinyMCEInput = createReactClass({
       PropTypes.func.isRequired
     ).isRequired,
 
-  },
-  getDefaultProps: function() {
-    return {
-      tinymceConfig: {},
-      maxInitWaitTime: 20000,
-      pollInterval: 1000,
-      textareaProps: {},
-      otherEventHandlers: {},
-      onChange: function() {},
-      component: 'textarea',
+  };
+
+  static defaultProps = {
+    tinymceConfig: {},
+    maxInitWaitTime: 20000,
+    pollInterval: 1000,
+    textareaProps: {},
+    otherEventHandlers: {},
+    onChange: () => {},
+    component: 'textarea',
+  };
+
+  constructor() {
+    super();
+    this.setupPassthroughEvents = this.setupPassthroughEvents.bind(this);
+    this.setupEditor = this.setupEditor.bind(this);
+    this.createMCEContextForComponent = this.createMCEContextForComponent.bind(this);
+    this.initTinyMCE = this.initTinyMCE.bind(this);
+    this.clearDropOverride = this.clearDropOverride.bind(this);
+    this.flagDropOverride = this.flagDropOverride.bind(this);
+    this.isDropOverrideFlagged = this.isDropOverrideFlagged.bind(this);
+    this.syncChange = this.syncChange.bind(this);
+    this.triggerEventHandler = this.triggerEventHandler.bind(this);
+    this.checkForChanges = this.checkForChanges.bind(this);
+    this.onTinyMCEChange = this.onTinyMCEChange.bind(this);
+    this.onTinyMCEBlur = this.onTinyMCEBlur.bind(this);
+    this.onTinyMCEUndo = this.onTinyMCEUndo.bind(this);
+    this.onTinyMCERedo = this.onTinyMCERedo.bind(this);
+    this.onTinyMCEDrop = this.onTinyMCEDrop.bind(this);
+    this.onTextareaChange = this.onTextareaChange.bind(this);
+    this.state = {
     };
-  },
-  getInitialState: function() {
-    return {
-      id: uuid(),
-      value: this.props.value
-    };
-  },
-  componentDidMount: function () {
+    this.component = null;
+    this.componentId = null;
+  }
+
+  getComponentID() {
+    return (this.componentId || (this.componentId = this.component.getAttribute('id')));
+  }
+  componentWillMount() {
+    this.setState({value: this.props.value || ''});
+  }
+
+  componentDidMount() {
     this.initStartTime = Date.now();
-    if(typeof tinymce !== 'undefined') {
+    if (typeof tinymce !== 'undefined') {
       this.initTinyMCE();
-    }else {
+    } else {
       this.initTimeout = setTimeout(this.initTinyMCE, 100);
     }
     this.updateInterval = setInterval(this.checkForChanges, this.props.pollInterval);
-  },
-  componentDidUpdate: function() {
-    if(this.props.focus) {
-      var editor = tinymce.get(this.state.id);
-      if(editor) { editor.focus(); }
+  }
+
+  componentDidUpdate() {
+    if (this.props.focus) {
+      const editor = tinymce.get(this.getComponentID());
+      if (editor) {
+        editor.focus();
+      }
     }
-  },
-  componentWillUnmount: function () {
-    tinymce.remove(this.state.id);
+  }
+
+  componentWillUnmount() {
+    tinymce.remove(this.getComponentID());
     clearTimeout(this.initTimeout);
     clearInterval(this.updateInterval);
     this.initTimeout = undefined;
     this.initStartTime = undefined;
-  },
-  componentWillReceiveProps: function (nextProps) {
-    if(nextProps.value !== this.state.value) {
-      var editor = tinymce.get(this.state.id);
-      if(editor) {
-        if(!this.props.ignoreUpdatesWhenFocused || tinymce.focusedEditor !== editor || this.isDropOverrideFlagged()) {
-          var bookmark = editor.selection.getBookmark(2, true);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.value !== this.state.value) {
+      const editor = tinymce.get(this.getComponentID());
+      if (editor) {
+        if (!this.props.ignoreUpdatesWhenFocused || tinymce.focusedEditor !== editor || this.isDropOverrideFlagged()) {
+          const bookmark = editor.selection.getBookmark(2, true);
           editor.setContent(nextProps.value);
           editor.selection.moveToBookmark(bookmark);
         }
       }
       this.setState({value: nextProps.value});
     }
-  },
-  setupPassthroughEvents: function(editor) {
-    var _this = this
-      , event;
+  }
 
-    /* eslint-disable no-loop-func */
-    for (var i = 0, len = DIRECT_PASSTHROUGH_EVENTS.length; i < len; ++i) {
-      (function(event){
-        editor.on(event.toLowerCase(), function (tinyMCEEvent) {
-          var handler = _this.props['on' + event];
-          if (typeof handler === 'function') {
-            handler(tinyMCEEvent);
-          }
-        });
-      })(DIRECT_PASSTHROUGH_EVENTS[i])
-    }
-    /* eslint-enable no-loop-func */
+  setupPassthroughEvents(editor) {
+    DIRECT_PASSTHROUGH_EVENTS.map((event) => {
+      editor.on(event.toLowerCase(), (tinyMCEEvent) => {
+        const handler = this.props['on' + event];
+        if (typeof handler === 'function') {
+          handler(tinyMCEEvent);
+        }
+      });
+    });
 
-    var handlers = this.props.otherEventHandlers;
-    for(var eventName in handlers) {
-      if(handlers.hasOwnProperty(eventName)) {
-        editor.on(eventName, handlers[eventName]);
-      }
-    }
-  },
-  setupEditor: function(editor) {
+    const handlers = this.props.otherEventHandlers;
+    Object.keys(handlers).map((key, index) => {
+      editor.on(index, key);
+    });
+  }
+
+  setupEditor(editor) {
     editor.on('change', this.onTinyMCEChange);
-    editor.on('blur',   this.onTinyMCEBlur);
-    editor.on('drop',   this.onTinyMCEDrop);
-    editor.on('undo',   this.onTinyMCEUndo);
-    editor.on('redo',   this.onTinyMCERedo);
+    editor.on('blur', this.onTinyMCEBlur);
+    editor.on('drop', this.onTinyMCEDrop);
+    editor.on('undo', this.onTinyMCEUndo);
+    editor.on('redo', this.onTinyMCERedo);
     this.setupPassthroughEvents(editor);
 
     if (this.props.onSetupEditor) {
       this.props.onSetupEditor(editor);
     }
 
-    if(this.props.focus) { editor.focus(); }
+    if (this.props.focus) {
+      editor.focus();
+    }
     this.initTimeout = undefined;
-  },
-  createMCEContextForComponent: function() {
-    var tinymceConfig = Object.assign(
+  }
+
+  createMCEContextForComponent() {
+    const tinymceConfig = Object.assign(
       {},
       this.props.tinymceConfig,
       {
-        selector: '#' + this.state.id,
+        target: this.component,
         setup: this.setupEditor
       }
     );
     tinymce.init(tinymceConfig);
-  },
-  initTinyMCE: function() {
-    var currentTime = Date.now();
-    if(!tinymce) {
-      if(currentTime - this.initStartTime > this.props.maxInitWaitTime) {
+  }
+
+  initTinyMCE() {
+    const currentTime = Date.now();
+    if (!tinymce) {
+      if (currentTime - this.initStartTime > this.props.maxInitWaitTime) {
         this.initTimeout = undefined;
-      }else {
+      } else {
         this.initTimeout = setTimeout(this.initTinyMCE, 100);
       }
-    }else {
+    } else {
       this.createMCEContextForComponent();
       this.initTimeout = undefined;
     }
-  },
-  clearDropOverride: function() {
+  }
+
+  clearDropOverride() {
     this._tempDropOverride = undefined;
-    var editor = tinymce.get(this.state.id);
-    if(editor) {
+    const editor = tinymce.get(this.getComponentID());
+    if (editor) {
       this.syncChange(editor.getContent());
     }
-  },
-  flagDropOverride: function() {
+  }
+
+  flagDropOverride() {
     this._tempDropOverride = true;
-    if(this._tempDropOverrideTimeout) { clearTimeout(this.clearDropOverride); }
+    if (this._tempDropOverrideTimeout) {
+      clearTimeout(this.clearDropOverride);
+    }
     this._tempDropOverrideTimeout = setTimeout(this.clearDropOverride, 250);
-  },
-  isDropOverrideFlagged: function() {
+  }
+
+  isDropOverrideFlagged() {
     return this._tempDropOverride;
-  },
-  syncChange: function(newValue) {
-    if(newValue !== this.state.value) {
-      if(this.props.onChange) { this.props.onChange(newValue); }
+  }
+
+  syncChange(newValue) {
+    if (newValue !== this.state.value) {
+      if (this.props.onChange) {
+        this.props.onChange(newValue);
+      }
       this.setState({value: newValue});
     }
-  },
-  triggerEventHandler: function(handler, event) {
-    if(handler) {
+  }
+
+  triggerEventHandler(handler, event) {
+    if (handler) {
       handler(event);
     }
-  },
-  checkForChanges: function() {
-    var editor = tinymce.get(this.state.id);
-    if(tinymce.focusedEditor === editor) {
-      var content = editor.getContent();
-      if(content !== this.state.value) {
+  }
+
+  checkForChanges() {
+    const editor = tinymce.get(this.getComponentID());
+    if (tinymce.focusedEditor === editor) {
+      const content = editor.getContent();
+      if (content !== this.state.value) {
         this.syncChange(content);
       }
     }
-  },
-  onTinyMCEChange: function(tinyMCEEvent) {
+  }
+
+  onTinyMCEChange(tinyMCEEvent) {
     this.syncChange(tinyMCEEvent.target.getContent());
-  },
-  onTinyMCEBlur: function(tinyMCEEvent) {
+  }
+
+  onTinyMCEBlur(tinyMCEEvent) {
     this.triggerEventHandler(this.props.onBlur, tinyMCEEvent);
-    if(this.props.ignoreUpdatesWhenFocused) {
+    if (this.props.ignoreUpdatesWhenFocused) {
       // if we have been ignoring updates while focused (to preserve cursor position)
       // sync them now that we no longer have focus.
       tinyMCEEvent.target.setContent(this.state.value);
     }
-  },
-  onTinyMCEUndo: function(tinyMCEEvent) {
+  }
+
+  onTinyMCEUndo(tinyMCEEvent) {
     this.triggerEventHandler(this.props.onUndo, tinyMCEEvent);
     this.syncChange(tinyMCEEvent.target.getContent());
-  },
-  onTinyMCERedo: function(tinyMCEEvent) {
+  }
+
+  onTinyMCERedo(tinyMCEEvent) {
     this.triggerEventHandler(this.props.onRedo, tinyMCEEvent);
     this.syncChange(tinyMCEEvent.target.getContent());
-  },
-  onTinyMCEDrop: function() {
+  }
+
+  onTinyMCEDrop() {
     // We want to process updates just after a drop, even if processUpdatesWhenFocused
     // is false. The processUpdatesWhenFocused flag exists to keep the cursor from
     // jumping around, and we do not cares so much if the cursor jumps after dropping
@@ -254,12 +294,14 @@ var TinyMCEInput = createReactClass({
     // drop means that anything that relies on knowing the content has changed is
     // won't actually know.
     this.flagDropOverride();
-  },
-  onTextareaChange: function(e) {
+  }
+
+  onTextareaChange(e) {
     // should only be called when tinymce failed to load and we are getting changes directly in the textarea (fallback mode?)
     this.syncChange(e.target.value);
-  },
-  render: function() {
+  }
+
+  render() {
     // the textarea is controlled by tinymce... and react, neither of which agree on the value
     // solution: keep a separate input element, controlled by just react, that will actually be submitted
     const Component = this.props.component;
@@ -267,16 +309,17 @@ var TinyMCEInput = createReactClass({
       <div className={this.props.className} style={this.props.style}>
         <input type="hidden" name={this.props.name} value={this.state.value} readOnly />
         <Component
-          id={this.state.id}
+          // id={this.state.id}
           defaultValue={this.state.value}
           onChange={this.onTextareaChange}
           rows={this.props.rows}
           style={this.props.tinymceConfig.inline ? {} : PSEUDO_HIDDEN}
           {...this.props.textareaProps}
+          ref={ref => (this.component = ref)}
         />
       </div>
     );
   }
-});
+}
 
-module.exports = TinyMCEInput;
+export default TinyMCEInput;

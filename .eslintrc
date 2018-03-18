@@ -1,38 +1,65 @@
 {
-  "parser": "babel-eslint",
   "env": {
     "browser": true,
     "node": true,
     "mocha": true
   },
-  "plugins": [
-    "react"
-  ],
-  "ecmaFeatures": {
-    "jsx": true
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "modules": true,
+      "forOf": true,
+      "jsx": true,
+      "es6": true,
+      "spread": true,
+      "experimentalObjectRestSpread": true,
+      "experimentalDecorators": true
+    }
   },
   "rules": {
-    "strict": [0],
-    "quotes": [2, "single"],
-    "eol-last": [0],
-    "no-mixed-requires": [0],
-    "no-underscore-dangle": [0],
-    "no-alert": [0],
-    "key-spacing": [0],
-    "camelcase": [0],
-    "no-multi-spaces": [0],
-    "react/display-name": 1,
-    "react/jsx-boolean-value": 1,
-    "react/jsx-quotes": 1,
-    "react/jsx-no-undef": 1,
-    "react/jsx-uses-react": 1,
-    "react/jsx-uses-vars": 1,
-    "react/no-did-mount-set-state": 1,
-    "react/no-did-update-set-state": 1,
-    "react/no-unknown-property": 1,
-    "react/prop-types": 1,
-    "react/react-in-jsx-scope": 1,
-    "react/self-closing-comp": 1,
-    "react/wrap-multilines": 1
-  }
+    "padded-blocks": 0,
+    "react/no-multi-comp": 0,
+    "import/default": 0,
+    "import/no-duplicates": 0,
+    "import/named": 0,
+    "import/namespace": 0,
+    "import/no-unresolved": 0,
+    "import/no-named-as-default": 2,
+    "comma-dangle": 0,  // not sure why airbnb turned this on. gross!
+    "indent": [2, 2, {"SwitchCase": 1}],
+    "no-console": 0,
+    "no-alert": 0,
+    "id-length": [2, {"min": 1, "properties": "never"}],
+    "object-curly-spacing": ["error", "never"],
+    "prefer-template": 0,
+    "max-len": ["error", 300, 2, {"ignoreUrls": true}],
+    "react/prefer-stateless-function": 0,
+    "consistent-return": 0,
+    "no-labels": 0,
+    "quote-props": 0,
+    "no-empty-label": 0,
+    "space-after-keywords": 0,
+    "space-return-throw-case": 0,
+    "no-return-assign": 0,
+    "react/jsx-indent-props": 0,
+    "react/jsx-space-before-closing": 0,
+    "arrow-body-style": 0,
+    "react/jsx-closing-bracket-location": 0,
+    "space-in-parens": 0,
+    "array-callback-return": 0,
+    "arrow-spacing": 0,
+    "no-param-reassign": 0,
+    "object-shorthand": 0,
+    "react/sort-comp": 0,
+    "array-bracket-spacing": 0,
+    "react/jsx-first-prop-new-line": 0,
+    "no-underscore-dangle": 0,
+    "global-require": 0,
+    "jsx-a11y/anchor-has-content": 0,
+    "react/forbid-prop-types": 0
+  },
+  "plugins": [
+    "react"
+  ]
 }
