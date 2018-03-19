@@ -20,6 +20,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import uuid from 'uuid';
 
 const DIRECT_PASSTHROUGH_EVENTS = [
   'Activate',
@@ -37,6 +38,7 @@ const PSEUDO_HIDDEN = {position: 'absolute', left: -200, top: -200, height: 0};
 
 class TinyMCEInput extends React.Component {
   static propTypes = {
+    id: PropTypes.string,
     className: PropTypes.string,
     tinymceConfig: PropTypes.object.isRequired,
     name: PropTypes.string,                           // the form name for the input element
@@ -85,6 +87,7 @@ class TinyMCEInput extends React.Component {
     onChange: () => {
     },
     component: 'textarea',
+
   };
 
   constructor() {
@@ -105,13 +108,20 @@ class TinyMCEInput extends React.Component {
     this.onTinyMCERedo = this.onTinyMCERedo.bind(this);
     this.onTinyMCEDrop = this.onTinyMCEDrop.bind(this);
     this.onTextareaChange = this.onTextareaChange.bind(this);
-    this.state = {};
+    this.getContainerID = this.getContainerID.bind(this);
+    this.state = {
+      id: uuid()
+    };
     this.component = null;
     this.componentId = null;
   }
 
   getComponentID() {
     return (this.componentId || (this.componentId = this.component.getAttribute('id')));
+  }
+
+  getContainerID() {
+    return this.props.id || this.state.id;
   }
 
   componentWillMount() {
@@ -198,7 +208,7 @@ class TinyMCEInput extends React.Component {
       {},
       this.props.tinymceConfig,
       {
-        target: this.component,
+        selector: `#${this.getContainerID()}`,
         setup: this.setupEditor
       }
     );
@@ -308,9 +318,10 @@ class TinyMCEInput extends React.Component {
     const Component = this.props.component;
     return (
       <div className={this.props.className} style={this.props.style}>
-        <input type="hidden" name={this.props.name} value={this.state.value} readOnly />
+        <input key={0} type="hidden" name={this.props.name} value={this.state.value} readOnly />
         <Component
-          // id={this.state.id}
+          key={1}
+          id={this.getContainerID()}
           defaultValue={this.state.value}
           onChange={this.onTextareaChange}
           rows={this.props.rows}
